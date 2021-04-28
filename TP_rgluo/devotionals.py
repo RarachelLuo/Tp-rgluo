@@ -1,11 +1,48 @@
-#import scriptures
 from cmu_112_graphics import *
 import math, random
 from math import sin, cos
+import sys
+sys.path.append('bible')
+import bible
+
 
 
 def appStarted(app):
-    pass
+    app.new=False
+    app.currDay=0
+  #  app.time=time.time()
+    #app.elapsed=0
+    app.verses=''
+    app.num=random.randint(0,12)
+    app.book=''
+    app.start=0
+
+#extracting the appropriate bible verses for that day.
+def extractDevotional(app):
+    #if we have finished reading through a whole book
+    if app.new:
+        app.num=random.randint(0,12)
+        app.book=bible.chooseBook(app.num)
+        app.new=False
+    else:
+        app.book=bible.chooseBook(app.num)
+    numOfVerses=8
+    #essentially the amount of days it takes to finish a book
+    interval=len(app.book)//numOfVerses
+    #the first verse you read for each day
+    app.start=0+app.currDay*numOfVerses
+    #if the first verse index is equal to the number of days it takes to finish 
+    #book, then we start a new book and restart the current amount of days we
+    #have been reading the book
+    if app.start==interval: 
+        verses=app.book[app.start:len(app.book)]
+        app.new=True
+        app.currDay=0
+    else:
+        verses=app.book[app.start:app.start+numOfVerses]
+    for verse in verses:
+        app.verses= app.verses+ verse
+
 
 #from github: https://gist.github.com/honix/6433bcd40131f42f9502
 def create_good_rectangle(canvas,x1, y1, x2, y2, feather, res=5, color='black'):
@@ -41,19 +78,25 @@ def create_good_rectangle(canvas,x1, y1, x2, y2, feather, res=5, color='black'):
         
     return canvas.create_polygon(points, fill=color) #?
 
+#draws your title
 def drawTitle(app,canvas):
     w=app.width
     h=app.height
     txtSize=w//20
     canvas.create_text(7*w/24,h/10, text="Devotionals", anchor="w",
                         font=f'Helvetica {txtSize} bold', fill="white")
+
 #draws main page of verses and questions
 def drawDevotional(app, canvas):
     w=app.width
     h=app.height
     create_good_rectangle(canvas,7*w/24,7*h/40, 29*w/30, 8*h/20, 20,
                             color="#CEE8FF" )
-    create_good_rectangle(canvas,7*w/24,9*h/20,29*w/30,19*h/20,20,color="#ECF8FF")
+    canvas.create_text(7*w/24,5*h/20, text=app.verses, anchor="w",
+                        font=f'Helvetica {w//100} bold', fill="white")
+    create_good_rectangle(canvas,7*w/24,9*h/20,29*w/30,19*h/20,20,
+                        color="#ECF8FF")
+
 
 #draws selected tab
 def drawSelection(app,canvas):
