@@ -26,7 +26,7 @@ def devotionalsAppStarted(app):
 
 #the appStarted variables initialized for myCalendar.py
 def calendarAppStart(app):
-    app.week=[[1]*7 for i in range(24)]
+    #app.week=[[1]*7 for i in range(24)]
     app.addEvent=False
     app.myCalendar=False #if are we on the calendar page or not
     app.typeHour=False #typing in the hour box of preferred time box
@@ -37,6 +37,9 @@ def calendarAppStart(app):
     app.error=False
     app.imageX= app.loadImage('x.png')
     app.imagex= app.scaleImage(app.imageX,1/36)
+    app.name=False #typing in the name of event box
+    app.hour1=False
+    app.2021={}
 
 def timerFired(app):
     app.currTime+=1

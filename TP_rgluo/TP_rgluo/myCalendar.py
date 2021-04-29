@@ -2,7 +2,7 @@ from cmu_112_graphics import *
 import math, random
 from math import sin, cos
 import tkinter as tk
-from datetime import datetime
+from datetime import datetime, date, timedelta
 
 
 #goals: person puts in their prefered devos time, 
@@ -55,7 +55,8 @@ def makeCalendar(app):
     print(app.prefHour)
     #reset the preferred hour in case user wants to put in a different time
     app.prefHour=''
-    placeDevosTime(app.week,0,prefHour,prefTime,prefTime)
+    for week in app.2021:
+        placeDevosTime(app.2021[week],0,prefHour,prefTime,prefTime)
 
 #checks if at a certain day and time, is it a free time for the user and close to their preferred time
 def isLegal(week,day,hour,time1, time2, time):
@@ -142,7 +143,38 @@ def preferredTimeKeyPressed(app,event):
                 app.prefMin+= event.key
         except:
             if event.key=='Delete' and 1<=len(app.prefMin)<3:
-                app.prefMin= app.prefMin[0:len(app.prefMin)-1]       
+                app.prefMin= app.prefMin[0:len(app.prefMin)-1]     
+
+def addEventkeyPressed(app,event):
+    w=app.width
+    h=app.height
+    if 12*w/40<event.x<30*w/40 and 13*h/40<event.y<8*h/20:
+        app.name=True
+
+def getCreateWeek(date):
+    allSundays= getAllSundays(year)
+    print(allSundays)
+    for week in range(len(allSundays)):
+        if (allSundays[week][0:2]<=self.month<=allSundays[week+1][0:2] and
+            allSundays[week][3:5]<=self.day<=allSundays[week+1][3:5]):
+            return week
+
+################################################################
+#code from stackOverflow to get all the sundays of the year
+# https://stackoverflow.com/questions/2003870/how-can-i-select-all-of-the-sundays-for-a-year-using-python
+def startOfWeek2021(year):
+        for d in allsundays(year):
+            app.year[d.strftime('%m/%d/%y')]=[[1]*7 for i in range(24)]
+        return allSundays
+
+def allsundays(year):
+    d = date(year, 1, 1)                    # January 1st
+    d += timedelta(days = 6 - d.weekday())  # First Sunday
+    while d.year == year:
+        yield d
+        d += timedelta(days = 7)
+###############################################################
+
 
 ######################Draw########################
 
@@ -164,7 +196,8 @@ def drawPreferredTime(app,canvas):
         hour=canvas.create_rectangle(31*w/40,h/20, 33*w/40,h/10,fill='white' )
         minute=canvas.create_rectangle(67*w/80,h/20, 71*w/80,h/10,fill='white' )
         go= canvas.create_rectangle(36*w/40,5*h/80,37*w/40, 7*h/80)
-        colon= canvas.create_text(133*w/160,3*h/40, text=":",font=f'Helvetica {w//50}')
+        colon= canvas.create_text(133*w/160,3*h/40, text=":",
+                                    font=f'Helvetica {w//50}')
         #checks if we are typing into hour box, then creates a blicking line to
         #indicate you can type, and if you type in a time, there's no more 
         #blinking line
@@ -221,8 +254,24 @@ def drawAddEvent(app,canvas):
         canvas.create_image(38*w/40,49*h/240,image=ImageTk.PhotoImage(app.imagex))
         canvas.create_text(12*w/40, 5*h/20, text='Name of Event',  anchor="nw" ,        
                         font=f'Helvetica {w//40} bold', fill="white")
-        
-
+        canvas.create_rectangle(12*w/40,13*h/40,30*w/40, 8*h/20,fill='white')
+        canvas.create_text(12*w/40,19*h/40, text='Time Span', anchor='nw',
+                            font=f'Helvetica {w//40} bold', fill="white")
+        hour1=canvas.create_rectangle(12*w/40,11*h/20,14*w/40,12*h/20,fill='white')
+        canvas.create_text(29*w/80, 23*h/40,text=':',font=f'Helvetica {w//50}')
+        min1=canvas.create_rectangle(15*w/40,11*h/20,17*w/40,12*h/20,fill='white')
+        canvas.create_text(36*w/80, 23*h/40,text='to',font=f'Helvetica {w//50}')
+        hour2=canvas.create_rectangle(19*w/40,11*h/20,21*w/40,12*h/20,fill='white')
+        canvas.create_text(43*w/80, 23*h/40,text=':',font=f'Helvetica {w//50}')
+        min2=canvas.create_rectangle(22*w/40,11*h/20,24*w/40,12*h/20,fill='white')
+        canvas.create_text(12*w/40,27*h/40, text='Starts on', anchor='nw',
+                            font=f'Helvetica {w//40} bold', fill="white")
+        day=canvas.create_rectangle(12*w/40,15*h/20,13*w/40,16*h/20,fill='white')
+        canvas.create_text(25*w/80, 33*h/40,text='Month',font=f'Helvetica {w//60}')
+        month=canvas.create_rectangle(14*w/40,15*h/20,15*w/40,16*h/20,fill='white')
+        canvas.create_text(29*w/80, 33*h/40,text='Day',font=f'Helvetica {w//60}')
+        year=canvas.create_rectangle(16*w/40,15*h/20,18*w/40,16*h/20,fill='white')
+        canvas.create_text(34*w/80, 33*h/40,text='Year',font=f'Helvetica {w//60}')
 
 #draws selected tab
 def drawSelection(app,canvas):
