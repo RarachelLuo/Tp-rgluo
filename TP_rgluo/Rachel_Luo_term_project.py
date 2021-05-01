@@ -1,10 +1,11 @@
 from cmu_112_graphics import *
 import tkinter as tk
 import math, random
-import devotionals
-import myCalendar
-import highlighted
+import devotionals #my python file
+import myCalendar #my python file
+import highlighted #my python file
 import prayer
+from datetime import datetime, date, timedelta #this is a built in module
 
 ##########################
 #This is the main page, which calls on all the other python files
@@ -26,17 +27,94 @@ def devotionalsAppStarted(app):
 
 #the appStarted variables initialized for myCalendar.py
 def calendarAppStart(app):
-    app.week=[]
+    #app.week=[[1]*7 for i in range(24)]
     app.addEvent=False
-    app.calendar=False #if are we on the calendar page or not
-    app.typeHour=False
-    app.typeMin=False
+    app.myCalendar=False #if are we on the calendar page or not
+    app.typeHour=False #typing in the hour box of preferred time box
+    app.typeMin=False #typing in the minute box of preferred time box
+    app.go=False #clicked the go button for preferred
     app.currTime=0
     app.prefHour='' #preferred time hour
-    app.prefMin='' #preferred time Min
+    app.prefMin= '' #preferred time Min
+    app.error=False #is there an error in any of the typed times
+    app.imageX= app.loadImage('x.png')
+    app.imagex= app.scaleImage(app.imageX,1/36)
+    app.name=False #typing in the name of event box
+    app.eventName='' #changes when user types in a name
+    app.hour1=False #are we typing in start hour box
+    app.min1=False #are we typing in start minute box
+    app.hour2=False #are we typing in end hour box
+    app.min2=False #are we typing in end minute box
+    app.startHour='' #starting hour of event
+    app.startMin='' #starting hour of minute
+    app.endHour='' #ending hour of event
+    app.endMin='' #ending hour of minute
+    app.year={} #dictionary for storing every week in this year, and it's avalabiliy
+    app.month1=False #are we typing in the start month box
+    app.day1=False #are we typing in the start day box
+    app.year1=False #are we typing in the start year box
+    app.startMonth='' #start month typed out
+    app.startDay='' #start day typed out
+    app.startYear='' #start year typed out
+    app.month2=False #are we typing in the end month box
+    app.day2=False #are we typing in the end day box
+    app.year2=False #are we typing in the end year box
+    app.endMonth='' #end month typed out
+    app.endDay='' #end day typed out
+    app.endYear='' #end year typed out
+    app.done=False #put in all the info for an event
+    app.yearColor={}
+    app.currWeek= 0 #the current week we are viewing right now
+    app.startTime=8 #starting time you want the calendar to draw
+    app.endTime=20 #ending time you want the calendar to draw 
+    app.timeSpan=0
+    app.day= None #weekly day the user picks for their event
+    week(app)
+    app.clicked=False #if you click on an event
+    app.clickedDay=None
+    app.clickedHour=None
+    app.delete=False #clicked the delete button
+
+#figureing out app started stuff related to the staring view of your week
+def week(app):
+    now= datetime.now()
+    date= now.strftime('%m/%d/%Y')
+    #today= int(date[3:5])
+    #todayMonth= int(date[0:2])
+    year=date[6:]
+    app.year=startOfWeek(app.year,int(year))
+    app.yearColor=startOfWeek(app.yearColor,int(year))
+    for sunday in app.year:
+        for day in range(7):
+                prevDate=datetime.today() - timedelta(days=day)
+                strPrevDate= prevDate.strftime('%m/%d/%Y')
+                if strPrevDate==sunday:
+                    app.week=app.year[sunday] #current week we are viewing
+                    app.currSunday=sunday
+                    app.weekColor=app.yearColor[sunday] #current colors week
+                    break
+
+
 
 def timerFired(app):
     app.currTime+=1
+    myCalendar.timerFired(app)
+
+################################################################
+#code from stackOverflow to get all the sundays of the year
+# https://stackoverflow.com/questions/2003870/how-can-i-select-all-of-the-sundays-for-a-year-using-python
+def startOfWeek(wholeYear,year):
+    for d in allsundays(year):
+        wholeYear[d.strftime('%m/%d/%Y')]=[[1]*7 for i in range(24)]
+    return wholeYear
+
+def allsundays(year):
+    d = date(year, 1, 1)                    # January 1st
+    d += timedelta(days = 6 - d.weekday())  # First Sunday
+    while d.year == year:
+        yield d
+        d += timedelta(days = 7)
+###############################################################
 
 def mousePressed(app, event):
     w=app.width
@@ -63,14 +141,20 @@ def mousePressed(app, event):
     elif (w/25)<x<(w/5) and (5*h/8)<y<(27*h/40):
         app.draw=3
         app.start=False
-    callTabs(app,event)
+    callTabsMouse(app,event)
 
-def callTabs(app,event):
+def keyPressed(app,event):
+    if app.myCalendar:
+        myCalendar.keyPressed(app,event)
+
+
+
+#if we are on a certain page, we only all the functions of that page
+def callTabsMouse(app,event):
     if app.devotionals:
         devotionals.extractDevotional(app)
     elif app.myCalendar:
-        myCalendar.preferredTime(app)
-        myCalendar.mousePressed(app,event)
+        myCalendar.mousePressed(app,event)    
 
 #draws main board, aka the part that does change
 def drawMain(app, canvas):

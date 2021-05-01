@@ -1,9 +1,8 @@
 from cmu_112_graphics import *
 import math, random
 from math import sin, cos
-import sys
-sys.path.append('bible')
-import bible
+import bible #this is just another python file I made to compile some of the 
+#bible verses textfiles
 
 
 
