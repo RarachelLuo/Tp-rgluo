@@ -3,7 +3,7 @@ import tkinter as tk
 import math, random
 import devotionals #my python file
 import myCalendar #my python file
-import highlighted #my python file
+import notes #my python file
 import prayer
 from datetime import datetime, date, timedelta #this is a built in module
 
@@ -35,6 +35,7 @@ def calendarAppStart(app):
     app.go=False #clicked the go button for preferred
     app.currTime=0
     app.prefHour='' #preferred time hour
+    app.savedPrefHour=-1
     app.prefMin= '' #preferred time Min
     app.error=False #is there an error in any of the typed times
     app.imageX= app.loadImage('x.png')
@@ -54,7 +55,7 @@ def calendarAppStart(app):
     app.day1=False #are we typing in the start day box
     app.year1=False #are we typing in the start year box
     app.startMonth='' #start month typed out
-    app.startDay='' #start day typed out
+    app.startDay='' #start day typed outb
     app.startYear='' #start year typed out
     app.month2=False #are we typing in the end month box
     app.day2=False #are we typing in the end day box
@@ -64,34 +65,44 @@ def calendarAppStart(app):
     app.endYear='' #end year typed out
     app.done=False #put in all the info for an event
     app.yearColor={}
+    app.timeSpan={}
     app.currWeek= 0 #the current week we are viewing right now
     app.startTime=8 #starting time you want the calendar to draw
     app.endTime=20 #ending time you want the calendar to draw 
-    app.timeSpan=0
     app.day= None #weekly day the user picks for their event
     week(app)
     app.clicked=False #if you click on an event
     app.clickedDay=None
     app.clickedHour=None
     app.delete=False #clicked the delete button
-
+    app.backWeek=False
+    app.back=0
+    app.nextWeek=False
+    app.next=0
+    app.chosenDay=-1
 #figureing out app started stuff related to the staring view of your week
 def week(app):
     now= datetime.now()
     date= now.strftime('%m/%d/%Y')
     #today= int(date[3:5])
     #todayMonth= int(date[0:2])
+    app.weekNumber=0
+    count=0
     year=date[6:]
-    app.year=startOfWeek(app.year,int(year))
+    app.year=startOfWeek(app.year,int(year)) #dictionary of all the sundays in a year
     app.yearColor=startOfWeek(app.yearColor,int(year))
+    app.timeSpan=startOfWeek(app.timeSpan,int(year))
     for sunday in app.year:
+        count+=1
         for day in range(7):
                 prevDate=datetime.today() - timedelta(days=day)
                 strPrevDate= prevDate.strftime('%m/%d/%Y')
                 if strPrevDate==sunday:
+                    app.weekNumber=count
                     app.week=app.year[sunday] #current week we are viewing
-                    app.currSunday=sunday
+                    app.currSunday=sunday #the current real time sunday
                     app.weekColor=app.yearColor[sunday] #current colors week
+                    app.weekTimeSpan=app.timeSpan[sunday]
                     break
 
 
@@ -133,7 +144,7 @@ def mousePressed(app, event):
         app.start=False
         app.devotionals=False
         app.myCalendar=True
-    #if you click on the word highlighted
+    #if you click on the word notes
     elif (w/25)<x<(w/5) and (21*h/40)<y<(23*h/40):
         app.draw=2
         app.start=False
@@ -144,6 +155,7 @@ def mousePressed(app, event):
     callTabsMouse(app,event)
 
 def keyPressed(app,event):
+    #if you are in the calendar oage
     if app.myCalendar:
         myCalendar.keyPressed(app,event)
 
@@ -164,9 +176,9 @@ def drawMain(app, canvas):
     #calls on function from myCalendar.py
     elif app.draw==1: 
         myCalendar.drawAll(app,canvas)
-    #calls on function from highlighted.py
+    #calls on function from notes.py
     elif app.draw==2: 
-        highlighted.drawAll(app,canvas)
+        notes.drawAll(app,canvas)
     #calls on function from prayer.py
     elif app.draw==3: 
         prayer.drawAll(app,canvas)
@@ -206,21 +218,35 @@ def drawStatic(app, canvas):
     w=app.width
     h=app.height
     txt=w//30
+    nextTxt=w//50
     if app.start:
         #creates the rectangle behind your welcome message 
-        devotionals.create_good_rectangle(canvas,7*w/24,5*h/20,29*w/30,12*h/20,
+        devotionals.create_good_rectangle(canvas,7*w/24,5*h/20,29*w/30,11*h/20,
                                             20,color="#BDE5F5")
+        devotionals.create_good_rectangle(canvas,7*w/24,23*h/40,29*w/30,18*h/20,
+                                            20,color='#C1DCF3')
         # creates welcome message
-        canvas.create_text(8*w/24,7*h/20,
+        canvas.create_text(151*w/240,7*h/20,
                             text="Hello! Welcome to Intentional Time",
-                            anchor="w",font=f'Helvetica {txt} bold', 
+                            font=f'Helvetica {txt} bold', 
                             fill="white")
-        canvas.create_text(12*w/24,9*h/20,
-                            text="With God!",
-                            anchor="w",font=f'Helvetica {txt} bold', 
-                            fill="white")    
+        canvas.create_text(151*w/240,9*h/20,
+                            text="With God!",font=f'Helvetica {txt} bold', 
+                            fill="white")   
+        canvas.create_text(14*w/40,12*h/20,
+                           text="You are here to:",font=f'Helvetica {nextTxt}',
+                           anchor='nw',fill='black') 
+        text=["become a devoted and organized child of christ",
+               "not have conflicting events on your calendar",
+               "complete your daily devotionals",
+               "be happy through the word of the Lord!"]
+        for i in range(len(text)):
+            canvas.create_text(15*w/40,13*h/20+i*h/20,
+                                text=text[i],font=f'Helvetica {nextTxt}',
+                                anchor='nw',fill='black')
+                                
     #draw the text in the side tabs
-    lst=["Devotionals", "Calendar", "Highlighted", "Prayer"]
+    lst=["Devotionals", "Calendar", "Notes", "Prayer"]
     textSize=w//40
     for i in range(4):
         txt=lst[i]

@@ -13,7 +13,9 @@ print(eventStart+timedelta(days=7))
 #is placement of time legal
 def isLegal(week,day,hour,time1, time2, time):
     for hours in range(hour+1):
-            if week[hours][day]==1 and time1<=hours<=time2: return True
+        print('hour:',hours)
+        print('day')
+        if week[hours][day]==1 and time1<=hours<=time2: return True
     return False
 
 #backtracking
@@ -21,25 +23,42 @@ def isLegal(week,day,hour,time1, time2, time):
     #0= not free time
     #1= free time
     #2= the devotional time this algorithm tried to optimize for
-def complexity(week, day,time1, time2, time):
+def placeDevosTime(week, day,time1, time2, time):
     if day==7:
         return week
     else:
         for hour in range(len(week)):
+            print(hour)
             if isLegal(week,day,hour,time1, time2, time):
-                week[hour][day] = 2
-                works = complexity(week, day+1,time, time, time)
+                print('mer')
+                newHour=otherChoices(week,day,time1,time2,time)
+                if newHour!=None:
+                    week[newHour][day]=2
+                else:
+                    week[hour][day] = 2
+                works = placeDevosTime(week, day+1,time, time, time)
                 if works != None:
                     return works
                 week[hour][day] = 1
             else:
                 if time1<=hour<=time2:
-                    print(time1)
-                    print(time2)
-                    time1-=1
-                    time2+=1
+                    diff1=time2-hour
+                    diff2=hour-time1
+                    if diff1>diff2:
+                        time1-=1
+                    if diff2>diff1:
+                        time2+=1
+                    if diff1==diff2:
+                        time1-=1
+                        time2+=1
         return None
 
-week=[[1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [0, 1, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1]]
+def otherChoices(week,day,time1,time2,time):
+    for hour in range(time,time1-1,-1):
+        print('hout:',hour)
+        if week[hour][day]==1:
+            return hour
 
-#print(complexity(week,0,2,2,2))
+week=[[1, 1, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1, 1, 1], [0, 1, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1]]
+
+print(placeDevosTime(week,0,2,2,2))

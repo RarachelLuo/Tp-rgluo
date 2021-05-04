@@ -52,11 +52,11 @@ def create_good_rectangle(canvas,x1, y1, x2, y2, feather, res=5, color='black'):
 
 #making your final calender with optimized devotionals time included
 def makeCalendar(app):
-    prefTime=int(app.prefHour)
-    print(app.prefHour)
+    if app.prefHour!='':
+        app.savedPrefHour=copy.copy(int(app.prefHour))
     #reset the preferred hour in case user wants to put in a different time
     for sunday in app.year:
-        placeDevosTime(app.year[sunday],0,prefTime,prefTime,prefTime)
+        placeDevosTime(app.year[sunday],0,app.savedPrefHour,app.savedPrefHour,app.savedPrefHour)
 
 #checks if at a certain day and time, is it a free time for the user and close to their preferred time
 def isLegal(week,day,hour,time1, time2, time):
@@ -76,34 +76,56 @@ def placeDevosTime(week, day,time1, time2, time):
     else:
         for hour in range(len(week)):
             if isLegal(week,day,hour,time1, time2, time):
-                week[hour][day] = 2
+                newHour=otherChoices(week,day,time1,time2,time)
+                if newHour!=None:
+                    week[newHour][day]=2
+                else:
+                    week[hour][day] = 2
                 works = placeDevosTime(week, day+1,time, time, time)
                 if works != None:
                     return works
                 week[hour][day] = 1
             else:
                 if time1<=hour<=time2:
-                    time1-=1
-                    time2+=1
+                    diff1=time2-hour
+                    diff2=hour-time1
+                    if diff1>diff2:
+                        time1-=1
+                    if diff2>diff1:
+                        time2+=1
+                    if diff1==diff2:
+                        time1-=1
+                        time2+=1
         return None
 
+#checks if there is a closer time in the hour before to do devos
+def otherChoices(week,day,time1,time2,time):
+    for hour in range(time,time1-1,-1):
+        if week[hour][day]==1:
+            return hour
+
+#recreating the app.week based on changes made in the app.year
 def week(app):
-    now= datetime.now()
-    date= now.strftime('%m/%d/%Y')
-    #today= int(date[3:5])
-    #todayMonth= int(date[0:2])
-    year=date[6:]
-    app.year=startOfWeek(app.year,int(year))
-    app.yearColor=startOfWeek(app.yearColor,int(year))
-    for sunday in app.year:
-        for day in range(7):
-                prevDate=datetime.today() - timedelta(days=day)
-                strPrevDate= prevDate.strftime('%m/%d/%Y')
-                if strPrevDate==sunday:
-                    app.week=app.year[sunday] #current week we are viewing
-                    app.currSunday=sunday
-                    app.weekColor=app.yearColor[sunday] #current colors week
-                    break
+    if app.backWeek:
+        diff=app.weekNumber-app.back
+        count=0
+        for sunday in app.year:
+            count+=1
+            if count==diff: 
+                app.week=app.year[sunday]
+                app.currSunday=sunday
+                app.colorWeek=app.yearColor[sunday]
+    else:
+        for sunday in app.year:
+            for day in range(7):
+                    prevDate=datetime.today() - timedelta(days=day)
+                    strPrevDate= prevDate.strftime('%m/%d/%Y')
+                    if strPrevDate==sunday:
+                        app.week=app.year[sunday] #current week we are viewing
+                        app.currSunday=sunday
+                        app.weekColor=app.yearColor[sunday] #current colors week
+                        app.weekTimeSpan=app.timeSpan[sunday]
+                        break
 
 def timerFired(app):
     week(app)
@@ -112,6 +134,7 @@ def mousePressed(app,event):
     preferredTimeMousePressed(app,event)
     addEventMousePressed(app,event)
     deleteEventMousePressed(app,event)
+    weekViewMousePressed(app,event)
 
 #specific mousePressed for the preferred times box
 def preferredTimeMousePressed(app,event):
@@ -129,15 +152,26 @@ def preferredTimeMousePressed(app,event):
         app.typeMin=True
         app.typeHour=False
     elif 36*w/40<event.x<37*w/40 and 5*h/80<event.y<7*h/80:
-        if 0<=int(app.prefHour)<=24:
-            app.typeHour=False
-            app.typeMin=False
-            makeCalendar(app)
-            print(app.week)
-            app.prefHour=''
-            app.prefMin=''
-        elif int(app.prefHour)>24:
+        try:
+            if 0<=int(app.prefHour)<=24:
+                app.typeHour=False
+                app.typeMin=False
+                erasePreferredTime(app)
+                makeCalendar(app)
+                app.prefHour=''
+                app.prefMin=''
+                app.error=False
+        except:
+        #elif int(app.prefHour)>24:
             app.error=True
+
+def weekViewMousePressed(app,event):
+    w=app.width
+    h=app.height
+    #if you click on arrow button to look at previous weeks
+    if 11*w/40<=event.x<=12*w/40 and 31*h/160<=event.y<=37*h/160:
+        app.backWeek=True
+        app.back+=1
 
 
 #specific mousePressed for the add event page
@@ -147,6 +181,7 @@ def addEventMousePressed(app,event):
     #if click x button, you go back to the calendar page
     if 15*w/16<event.x<77*w/80 and 3*h/16<event.y<17*h/80:
         app.addEvent=False
+        app.error=False
     #if you click on the name of event box, it means you can type here
     elif 12*w/40<=event.x<=30*w/40 and 13*h/40<=event.y<=8*h/20:
         app.name=True
@@ -172,8 +207,12 @@ def addEventMousePressed(app,event):
         app.min2=True
         app.name=app.hour1=app.min1=app.hour2=False
         app.month1=app.day1=app.year1=app.month2=app.day2=app.year2=False
+    #if you clickon one of the weekly days
+    for day in range(7):
+        if 27*w/40+day*3*w/80<=event.x<=28*w/40+day*3*w/80 and 11*h/20<=event.y<=12*h/20:
+            app.chosenDay=day
     #if you click on starting month time of your event
-    elif 12*w/40<=event.x<=14*w/40 and 15*h/20<=event.y<=16*h/20:
+    if 12*w/40<=event.x<=14*w/40 and 15*h/20<=event.y<=16*h/20:
         app.month1=True
         app.name=app.hour1=app.min1=app.hour2=app.min2=False
         app.day1=app.year1=app.month2=app.day2=app.year2=False
@@ -205,10 +244,25 @@ def addEventMousePressed(app,event):
     #if you click on the done button
     elif 34*w/40<=event.x<=37*w/40 and 16*h/20<=event.y<=17*h/20:
         addEvent(app)
-        app.timeSpan=int(app.endHour)-int(app.startHour)
-        app.addEvent=False
-        app.eventName=app.startHour=app.startMin=app.endHour=app.endMin=''
-        app.startMonth=app.startDay=app.startYear=app.endMonth=app.endDay=app.endYear=''
+        erasePreferredTime(app)
+        makeCalendar(app)
+        print('week:',app.week)
+        if not(app.error):
+            app.addEvent=False
+            app.name=app.hour1=app.min1=app.hour2=app.min2=app.month1=app.day1=False
+            app.year1=app.month2=app.day2=app.year2=app.typeMin=app.typeHour=False
+            app.eventName=app.startHour=app.startMin=app.endHour=app.endMin=''
+            app.startMonth=app.startDay=app.startYear=app.endMonth=app.endDay=app.endYear=''
+            
+
+def erasePreferredTime(app):
+    if app.savedPrefHour!=-1:
+        for sunday in app.year:
+            for hour in range(len(app.year[sunday])):
+                for day in range(len(app.year[sunday][hour])):
+                    if app.year[sunday][hour][day]==2:
+                        app.year[sunday][hour][day]=1
+
 
 def keyPressed(app,event):
     preferredTimeKeyPressed(app,event)
@@ -324,31 +378,34 @@ def addEventkeyPressed(app,event):
                     app.endYear= app.endYear[0:len(app.endYear)-1]
 
 def deleteEventMousePressed(app,event):
-    w=app.width
-    h=app.height
-    for hour in range(app.startTime,app.endTime):
-        for day in range(len(app.week[hour])):
-            newHour=hour-app.startTime
-            if 163*w/480+ 43*w/480*day<=event.x<=103*w/240+43*day*w/480:
-                if 37*h/120+(7*newHour*h/120)<=event.y<=11*h/30+(7*newHour*h/120):
-                    if not(app.addEvent):
-                        print(day,hour)
-                        app.clicked=True
-                        app.clickedDay=day
-                        app.clickedHour=hour
+    if not(app.addEvent):
+        w=app.width
+        h=app.height
+        for hour in range(app.startTime,app.endTime):
+            for day in range(len(app.week[hour])):
+                newHour=hour-app.startTime
+                if 163*w/480+ 43*w/480*day<=event.x<=103*w/240+43*day*w/480:
+                    if 37*h/120+(7*newHour*h/120)<=event.y<=11*h/30+(7*newHour*h/120):
+                        if not(app.addEvent):
+                            app.clicked=True
+                            app.clickedDay=day
+                            app.clickedHour=hour
 
 def deleteEventKeyPressed(app,event):
     if app.clicked:
         if event.key=='Delete':
-            deleteEvent(app,app.clickedDay,app.clickedHour)
+            deleteEvent(app,app.clickedDay,app.clickedHour,app.week)
+            makeCalendar(app)
 
-def deleteEvent(app,day,hour):
+def deleteEvent(app,day,hour,week):
     for sunday in app.year:
         currSunday=int(sunday[3:5])
         month=int(sunday[0:2])
         if app.currSunday==sunday:
-            app.year[sunday][hour][day]=1
-
+            timeSpan=app.timeSpan[sunday][hour][day]
+            for hours in range(timeSpan):
+                app.year[sunday][hour+hours][day]=1
+                    
 
 ################################################################
 #code from stackOverflow to get all the sundays of the year
@@ -369,33 +426,41 @@ def allsundays(year):
 #checks where in your app.year dictionary of the whole year are you going 
 #to add the event
 def addEvent(app):
-    year=app.startYear
-    app.year=startOfWeek(app.year,int(year))
-    app.yearColor=startOfWeek(app.yearColor,int(year))
-    color= random.choice(['#F2D6D6', '#CFD0FD','#CFFDF2','#FFEFC5','#FFDEF4'])    
+    color= random.choice(['#F2D6D6', '#CFD0FD','#CFFDF2','#FFEFC5','#FFDEF4'])  
+    goIntoNextWeek=False
     for sunday in app.year:
         currSunday=int(sunday[3:5])
         for day in range(7):
-            eventStart=date(int(app.startYear),int(app.startMonth),int(app.startDay))
-            startSunday=eventStart - timedelta(days=day)
-            strStartSunday= startSunday.strftime('%m/%d/%Y')
-            if strStartSunday==sunday:
-                weeks,extraDays=isNextWeek(app,sunday)
-                weekDay=day
-                endDay=int(app.endDay)-currSunday
-                changeWeek(app,app.year[sunday],app.yearColor[sunday],color,weekDay
-                            ,endDay)
-
+            try:
+                if goIntoNextweek:
+                    changeWeek()
+                eventStart=date(int(app.startYear),int(app.startMonth),int(app.startDay))
+                startSunday=eventStart - timedelta(days=day)
+                strStartSunday= startSunday.strftime('%m/%d/%Y')
+                if strStartSunday==sunday:
+                    weeks,extraDays=isNextWeek(app,sunday)
+                    print(weeks, extraDays)
+                    weekDay=day
+                    endDay=int(app.endDay)-currSunday
+                    changeWeek(app,app.year[sunday],app.yearColor[sunday],
+                                app.timeSpan[sunday], color,weekDay,endDay)
+                    app.error=False
+            except:
+                app.error=True
+            week-=1
+            goIntoNextWeek=True
 
 #goes into the specific week and changes it
-def changeWeek(app,week1,week2,color,weekDay,endDay):
+def changeWeek(app,week1,week2,week3,color,weekDay,endDay):
+    timeSpan=int(app.endHour)-int(app.startHour)
     for hour in range(len(week1)):
-        for day in range(len(week1[hour])):
-            if (weekDay<=day<=endDay and 
-                int(app.startHour)<=hour<int(app.endHour)):
-                week1[hour][day]=0
-                week2[hour][day]=color
+        #for day in range(len(week1[hour])) (weekDay<=day<=endDay and :
+        if int(app.startHour)<=hour<int(app.endHour):
+            week1[hour][app.chosenDay]=0
+            week2[hour][app.chosenDay]=color
+            week3[hour][app.chosenDay]=timeSpan
 
+#is the end date in another week?
 def isNextWeek(app,sunday):
     weeks=0
     extraDays=0
@@ -453,8 +518,15 @@ def drawPreferredTime(app,canvas):
         canvas.create_text(672*w/800,7*h/120,text=app.prefMin, anchor='nw',
                             font=f'Helvetica {w//50}')
         #if times that don't exist are put in, an error message will pop up   
-        if app.error:
-            create_good_rectangle(canvas,32*w/40,11*h/80,w+5,13*h/80,2,color='#B2D5F3')
+        
+def drawError(app,canvas):
+    w=app.width
+    h=app.height
+    if app.error:
+        create_good_rectangle(canvas,29*w/40,h/8,w+5,7*h/40,5,color='#B2D5F3')
+        canvas.create_text(69*w/80,3*h/20,
+                            text='Something went Wrong. Check your inputs!',
+                            font=f'Helvetica {w//80} bold', fill='#D94949')
 
 #this draws the main calendar
 def drawCalendar(app,canvas):
@@ -463,35 +535,51 @@ def drawCalendar(app,canvas):
         h=app.height
         #draw actual calendar
         create_good_rectangle(canvas,w/4,h/4,29*w/30,19*h/20,20,color="#ECF8FF")
+        week=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
         for i in range(7):
+            canvas.create_text(123*w/320+ 43*w/480*i, 33*h/120,text=week[i],
+                                font=f'Helvetica {w//70} bold')
             canvas.create_line(163*w/480+ 43*w/480*i, h/4,163*w/480+ 43*w/480*i,
                                 19*h/20,width=2, fill='white')
+        times=[ i for i in range(25) ]
+        currTimes=times[app.startTime:app.endTime]
         for i in range(11):
             canvas.create_line(w/4,37*h/120+(7*i*h/120), 29*w/30,
                                 37*h/120+(7*i*h/120),width=2, fill='white')
-        currentWeekView(app, canvas,app.week,app.weekColor)
+            canvas.create_text(282*w/960,37*h/120+(7*i*h/120),text=f'{currTimes[i]}:00',
+                                font=f'Helvetica {w//70} bold') 
+        currentWeekView(app, canvas,app.week,app.weekColor,app.weekTimeSpan)
 
 #draw the current week you are looking at
-def currentWeekView(app,canvas,week,colorWeek):
+def currentWeekView(app,canvas,week,colorWeek,timeSpanWeek):
     w=app.width
     h=app.height
     for hour in range(app.startTime,app.endTime):
         for day in range(len(week[hour])):
             if week[hour][day]==0 and colorWeek[hour][day]!=1:
+                timeSpan=timeSpanWeek[hour][day]
                 if colorWeek[hour-1][day]==colorWeek[hour][day]:
                     continue
                 newHour=hour-app.startTime
                 y=37*h/120+(7*newHour*h/120)
                 create_good_rectangle(canvas,163*w/480+ 43*w/480*day,y,
                                         103*w/240+43*day*w/480, 
-                                        y+ 7*h*app.timeSpan/120,10,
+                                        y+ 7*h*timeSpan/120,10,
                                         color=colorWeek[hour][day])
+                '''
+                canvas.create_rectangle(163*w/480+ 43*w/480*day,
+                                        37*h/120+(7*newHour*h/120),
+                                        103*w/240+43*day*w/480,
+                                        11*h/30+(7*newHour*h/120),
+                                        fill=colorWeek[hour][day], 
+                                        outline='white')
+                                        '''
             if week[hour][day]==2:
                 newHour=hour-app.startTime
                 y=37*h/120+(7*newHour*h/120)
                 create_good_rectangle(canvas,163*w/480+ 43*w/480*day,y,
                                         103*w/240+43*day*w/480, 
-                                        y+ 7*h*app.timeSpan/120,10,
+                                        y+ 7*h/120,10,
                                         color='#D8F6FF')
 
 
@@ -505,6 +593,19 @@ def drawAddEvent(app,canvas):
                                 outline='white')
     canvas.create_text(292*w/480, 17*h/80, text='ADD EVENT',
                         font=f'Helvetica {w//70} bold', fill="white")
+    #draw the arrow buttons
+    #left
+    canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
+                            outline='White',width=3, fill='#93B0FC')
+    #right
+    canvas.create_polygon(38*w/40,17*h/80,37*w/40,31*h/160,37*w/40,37*h/160, 
+                            outline='White',width=3, fill='#93B0FC')
+    #up
+    #canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
+     #                       outline='White',width=3, fill='#93B0FC')
+    #down
+    #canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
+     #                       outline='White',width=3, fill='#93B0FC')
     if app.addEvent:
         #call on all the canvas drawing of the page
         addEventPage(app,canvas)
@@ -613,28 +714,38 @@ def addEventPage(app,canvas):
     create_good_rectangle(canvas,12*w/40,13*h/40,30*w/40, 8*h/20,20,color='white')
     canvas.create_text(12*w/40,19*h/40, text='Time Span', anchor='nw',
                             font=f'Helvetica {w//40} bold', fill="white")
-    hour1=canvas.create_rectangle(12*w/40,11*h/20,14*w/40,12*h/20,fill='white')
+    hour1=create_good_rectangle(canvas,12*w/40,11*h/20,14*w/40,12*h/20, 10,color='white')
     canvas.create_text(29*w/80, 23*h/40,text=':',font=f'Helvetica {w//50}')
-    min1=canvas.create_rectangle(15*w/40,11*h/20,17*w/40,12*h/20,fill='white')
+    min1=create_good_rectangle(canvas,15*w/40,11*h/20,17*w/40,12*h/20,10,color='white')
     canvas.create_text(36*w/80, 23*h/40,text='to',font=f'Helvetica {w//50}')
-    hour2=canvas.create_rectangle(19*w/40,11*h/20,21*w/40,12*h/20,fill='white')
+    hour2=create_good_rectangle(canvas,19*w/40,11*h/20,21*w/40,12*h/20,10,color='white')
     canvas.create_text(43*w/80, 23*h/40,text=':',font=f'Helvetica {w//50}')
-    min2=canvas.create_rectangle(22*w/40,11*h/20,24*w/40,12*h/20,fill='white')
+    min2=create_good_rectangle(canvas,22*w/40,11*h/20,24*w/40,12*h/20,10,color='white')
+    canvas.create_text(27*w/40, 19*h/40,text='Repeats Weekly on:', anchor='nw'
+                            ,font=f'Helvetica {w//40} bold', fill="white")
+    week=['S','M','T','W','TH','F','SA']
+    for day in range(7):
+        if day==app.chosenDay: color='#CFD0FD'
+        else: color='#ECF8FF'
+        create_good_rectangle(canvas,27*w/40+day*3*w/80,11*h/20,28*w/40+day*3*w/80,
+                                12*h/20,10,color=color)
+        canvas.create_text(11*w/16+day*3*w/80,23*h/40,text=week[day],
+                            font=f'Helvetica {w//70} bold')
     canvas.create_text(12*w/40,27*h/40, text='Starts on', anchor='nw',
                         font=f'Helvetica {w//40} bold', fill="white")
-    startMonth=canvas.create_rectangle(12*w/40,15*h/20,14*w/40,16*h/20,fill='white')
+    startMonth=create_good_rectangle(canvas,12*w/40,15*h/20,14*w/40,16*h/20,10,color='white')
     canvas.create_text(26*w/80, 33*h/40,text='Month',font=f'Helvetica {w//60}')
-    startDay=canvas.create_rectangle(15*w/40,15*h/20,17*w/40,16*h/20,fill='white')
+    startDay=create_good_rectangle(canvas,15*w/40,15*h/20,17*w/40,16*h/20,10,color='white')
     canvas.create_text(32*w/80, 33*h/40,text='Day',font=f'Helvetica {w//60}')
-    startYear=canvas.create_rectangle(18*w/40,15*h/20,w/2,16*h/20,fill='white')
+    startYear=create_good_rectangle(canvas,18*w/40,15*h/20,w/2,16*h/20,10,color='white')
     canvas.create_text(38*w/80, 33*h/40,text='Year',font=f'Helvetica {w//60}')
     canvas.create_text(23*w/40,27*h/40, text='Ends on', anchor='nw',
                         font=f'Helvetica {w//40} bold', fill="white")
-    endMonth= canvas.create_rectangle(23*w/40,15*h/20,25*w/40,16*h/20,fill='white')
+    endMonth= create_good_rectangle(canvas,23*w/40,15*h/20,25*w/40,16*h/20,10,color='white')
     canvas.create_text(24*w/40, 33*h/40,text='Month',font=f'Helvetica {w//60}')
-    endDay=canvas.create_rectangle(26*w/40,15*h/20,28*w/40,16*h/20,fill='white')
+    endDay=create_good_rectangle(canvas,26*w/40,15*h/20,28*w/40,16*h/20,10,color='white')
     canvas.create_text(27*w/40, 33*h/40,text='Day',font=f'Helvetica {w//60}')
-    endYear=canvas.create_rectangle(29*w/40,15*h/20,31*w/40,16*h/20,fill='white')
+    endYear=create_good_rectangle(canvas,29*w/40,15*h/20,31*w/40,16*h/20,10,color='white')
     canvas.create_text(30*w/40, 33*h/40,text='Year',font=f'Helvetica {w//60}')
     done=canvas.create_rectangle(34*w/40,16*h/20,37*w/40,17*h/20,fill="#A7C9E7",
                                 outline='white')
@@ -654,4 +765,5 @@ def drawAll(app,canvas):
     drawSelection(app,canvas)
     drawPreferredTime(app,canvas)
     drawAddEvent(app,canvas)
+    drawError(app,canvas)
 
