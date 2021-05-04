@@ -24,6 +24,7 @@ def devotionalsAppStarted(app):
     app.verses=''
     app.num=random.randint(0,12)
     app.devotionals=False #if are we on the devotionals page or not
+    app.devotionalClicked=0
 
 #the appStarted variables initialized for myCalendar.py
 def calendarAppStart(app):
@@ -80,10 +81,13 @@ def calendarAppStart(app):
     app.nextWeek=False
     app.next=0
     app.chosenDay=-1
+    app.dayDiff=-1
+
 #figureing out app started stuff related to the staring view of your week
 def week(app):
     now= datetime.now()
     date= now.strftime('%m/%d/%Y')
+    app.date=date[0:5]
     #today= int(date[3:5])
     #todayMonth= int(date[0:2])
     app.weekNumber=0
@@ -116,7 +120,7 @@ def timerFired(app):
 # https://stackoverflow.com/questions/2003870/how-can-i-select-all-of-the-sundays-for-a-year-using-python
 def startOfWeek(wholeYear,year):
     for d in allsundays(year):
-        wholeYear[d.strftime('%m/%d/%Y')]=[[1]*7 for i in range(24)]
+        wholeYear[d.strftime('%m/%d/%Y')]=[[1]*7 for i in range(144)]
     return wholeYear
 
 def allsundays(year):
@@ -135,6 +139,7 @@ def mousePressed(app, event):
     #if you click on the word devotionals
     if (w/25)<x<(w/5) and (13*h/40)<y<(3*h/8):
         app.draw=0
+        app.devotionalClicked+=1
         app.start=False
         app.myCalendar=False
         app.devotionals=True
@@ -163,8 +168,9 @@ def keyPressed(app,event):
 
 #if we are on a certain page, we only all the functions of that page
 def callTabsMouse(app,event):
-    if app.devotionals:
+    if app.devotionals and app.devotionalClicked==1:
         devotionals.extractDevotional(app)
+        app.devotionals=False
     elif app.myCalendar:
         myCalendar.mousePressed(app,event)    
 

@@ -106,16 +106,7 @@ def otherChoices(week,day,time1,time2,time):
 
 #recreating the app.week based on changes made in the app.year
 def week(app):
-    if app.backWeek:
-        diff=app.weekNumber-app.back
-        count=0
-        for sunday in app.year:
-            count+=1
-            if count==diff: 
-                app.week=app.year[sunday]
-                app.currSunday=sunday
-                app.colorWeek=app.yearColor[sunday]
-    else:
+    if not(app.nextWeek) and not(app.backWeek):
         for sunday in app.year:
             for day in range(7):
                     prevDate=datetime.today() - timedelta(days=day)
@@ -168,11 +159,43 @@ def preferredTimeMousePressed(app,event):
 def weekViewMousePressed(app,event):
     w=app.width
     h=app.height
-    #if you click on arrow button to look at previous weeks
-    if 11*w/40<=event.x<=12*w/40 and 31*h/160<=event.y<=37*h/160:
-        app.backWeek=True
-        app.back+=1
-
+    if not(app.addEvent):
+        #if you click on arrow button to look at previous weeks
+        if 11*w/40<=event.x<=12*w/40 and 31*h/160<=event.y<=37*h/160:
+            app.backWeek=True
+            app.weekNumber=app.weekNumber-1
+            count=0
+            for sunday in app.year:
+                count+=1
+                if count== app.weekNumber: 
+                    app.week=app.year[sunday]
+                    app.currSunday=sunday
+                    app.colorWeek=app.yearColor[sunday]
+                    app.weekTimeSpan=app.timeSpan[sunday]
+            app.nextWeek=False
+        #if you click on right arrow to look at the next week
+        elif 37*w/40<=event.x<=38*w/40 and 31*h/160<=event.y<=37*h/160:
+            app.nextWeek=True
+            app.weekNumber=1+app.weekNumber
+            count=0
+            for sunday in app.year:
+                count+=1
+                if count== app.weekNumber: 
+                    app.week=app.year[sunday]
+                    app.currSunday=sunday
+                    app.colorWeek=app.yearColor[sunday] 
+                    app.weekTimeSpan=app.timeSpan[sunday]
+            app.backWeek=False
+        #up button to look at time above
+        elif 71*w/80<=event.x<=73*w/80 and 31*h/160<=event.y<=37*h/160:
+            if app.startTime!=0:
+                app.startTime-=1
+                app.endTime-=1
+        #down button to look at time below
+        elif 5*w/16<=event.x<=27*w/80 and 31*h/160<=event.y<=37*h/160:
+            if app.endTime!=24:
+                app.startTime+=1
+                app.endTime+=1
 
 #specific mousePressed for the add event page
 def addEventMousePressed(app,event):
@@ -246,6 +269,7 @@ def addEventMousePressed(app,event):
         addEvent(app)
         erasePreferredTime(app)
         makeCalendar(app)
+        print('year',app.year)
         print('week:',app.week)
         if not(app.error):
             app.addEvent=False
@@ -395,6 +419,7 @@ def deleteEventKeyPressed(app,event):
     if app.clicked:
         if event.key=='Delete':
             deleteEvent(app,app.clickedDay,app.clickedHour,app.week)
+            erasePreferredTime(app)
             makeCalendar(app)
 
 def deleteEvent(app,day,hour,week):
@@ -412,7 +437,7 @@ def deleteEvent(app,day,hour,week):
 # https://stackoverflow.com/questions/2003870/how-can-i-select-all-of-the-sundays-for-a-year-using-python
 def startOfWeek(wholeYear,year):
     for d in allsundays(year):
-        wholeYear[d.strftime('%m/%d/%Y')]=[[1]*7 for i in range(24)]
+        wholeYear[d.strftime('%m/%d/%Y')]=[[1]*7 for i in range(144)]
     return wholeYear
 
 def allsundays(year):
@@ -425,15 +450,33 @@ def allsundays(year):
 
 #checks where in your app.year dictionary of the whole year are you going 
 #to add the event
+
+'''
+
 def addEvent(app):
     color= random.choice(['#F2D6D6', '#CFD0FD','#CFFDF2','#FFEFC5','#FFDEF4'])  
     goIntoNextWeek=False
+    weeks=-1
     for sunday in app.year:
         currSunday=int(sunday[3:5])
-        for day in range(7):
-            try:
-                if goIntoNextweek:
-                    changeWeek()
+            #try:
+        print(weeks)
+        print(goIntoNextWeek)
+        if goIntoNextWeek and weeks>0:
+            print('mer')
+            if weeks>0: 
+                notStrEnd=startSunday-timedelta(days=1)
+                endDay=int(notStrEnd.strftime('%d'))
+                print(endDay)
+            else: endDay=int(app.endDay)-currSunday
+            weekDay=int(sunday[3:5])
+            changeWeek(app,app.year[sunday],app.yearColor[sunday],
+                        app.timeSpan[sunday],color,weekDay,endDay)
+            print('next:',app.year[sunday])
+            weeks-=1
+            goIntoNextWeek=True
+        else:
+            for day in range(7):
                 eventStart=date(int(app.startYear),int(app.startMonth),int(app.startDay))
                 startSunday=eventStart - timedelta(days=day)
                 strStartSunday= startSunday.strftime('%m/%d/%Y')
@@ -441,26 +484,81 @@ def addEvent(app):
                     weeks,extraDays=isNextWeek(app,sunday)
                     print(weeks, extraDays)
                     weekDay=day
-                    endDay=int(app.endDay)-currSunday
+                    if weeks>0: 
+                        notStrEnd=startSunday-timedelta(days=1)
+                        endDay=int(notStrEnd.strftime('%d'))
+                    else: endDay=int(app.endDay)-currSunday
                     changeWeek(app,app.year[sunday],app.yearColor[sunday],
                                 app.timeSpan[sunday], color,weekDay,endDay)
-                    app.error=False
-            except:
-                app.error=True
-            week-=1
-            goIntoNextWeek=True
+                    goIntoNextWeek=True
+                    break 
+            app.error=False
+        #except:
+            #app.error=True
+
+'''
+
+def addEvent(app):
+    color= random.choice(['#F2D6D6', '#CFD0FD','#CFFDF2','#FFEFC5','#FFDEF4'])  
+    weeks=-1
+    goIntoNextWeek=False
+    for sunday in app.year:
+        currSunday=int(sunday[3:5])
+        #if the start date and end date span multiple weeks
+        try:
+            eventStart=date(int(app.startYear),int(app.startMonth),int(app.startDay))
+            eventEnd= date(int(app.endYear),int(app.endMonth),int(app.endDay))
+            if goIntoNextWeek and weeks>0:
+                if weeks==1: 
+                    thisSunday=date(int(sunday[6:]),int(sunday[0:2]),currSunday)
+                    endDay=int((eventEnd-thisSunday).days)
+                else:
+                    notStrEnd=startSunday-timedelta(days=1)
+                    endDay=int(notStrEnd.strftime('%d'))
+                changeWeek(app,app.year[sunday],app.yearColor[sunday],
+                            app.timeSpan[sunday], color,endDay)   
+                weeks-=1
+            #the starting week of our event
+            else:
+                for day in range(7):
+                    startSunday=eventStart - timedelta(days=day)
+                    strStartSunday= startSunday.strftime('%m/%d/%Y')
+                    if strStartSunday==sunday:
+                        weeks,extraDays=isNextWeek(app,sunday)
+                        weekDay=day
+                        if weeks>0: 
+                            notStrEnd=startSunday-timedelta(days=1)
+                            endDay=int(notStrEnd.strftime('%d'))
+                        else: endDay=int(app.endDay)-currSunday
+                        changeWeek(app,app.year[sunday],app.yearColor[sunday],
+                                    app.timeSpan[sunday], color,endDay)
+                        goIntoNextWeek=True
+                        break 
+            app.error=False
+        except:
+            app.error=True
 
 #goes into the specific week and changes it
-def changeWeek(app,week1,week2,week3,color,weekDay,endDay):
+def changeWeek(app,week1,week2,week3,color,endDay):
     timeSpan=int(app.endHour)-int(app.startHour)
-    for hour in range(len(week1)):
-        #for day in range(len(week1[hour])) (weekDay<=day<=endDay and :
-        if int(app.startHour)<=hour<int(app.endHour):
-            week1[hour][app.chosenDay]=0
-            week2[hour][app.chosenDay]=color
-            week3[hour][app.chosenDay]=timeSpan
+    for tenMin in range(len(week1)):
+        for day in range(len(week1[tenMin])):
+            # (weekDay<=day<=endDay
+            if day<=endDay and int(app.startHour)<=hour<int(app.endHour):
+                week1[tenMin][app.chosenDay]=0
+                week2[tenMin][app.chosenDay]=color
+                week3[tenMin][app.chosenDay]=timeSpan
 
 #is the end date in another week?
+def isNextWeek(app,sunday):
+    eventStart=date(int(app.startYear),int(app.startMonth),int(app.startDay))
+    eventEnd= date(int(app.endYear),int(app.endMonth),int(app.endDay))
+    app.dayDiff=int((eventEnd-eventStart).days)
+    weeks=app.dayDiff//7
+    extraDays=app.dayDiff%7
+    return (weeks,extraDays)
+
+'''
 def isNextWeek(app,sunday):
     weeks=0
     extraDays=0
@@ -473,7 +571,7 @@ def isNextWeek(app,sunday):
                 weeks=day//7
                 extraDays=day%7
     return (weeks,extraDays)
-
+'''
 
 ######################Draw########################
 
@@ -482,7 +580,7 @@ def drawTitle(app,canvas):
     w=app.width
     h=app.height
     txtSize=w//20
-    canvas.create_text(7*w/24,h/10, text="Calendar", anchor="w",
+    canvas.create_text(7*w/24,h/10, text=f"Calendar | {app.date}", anchor="w",
                         font=f'Helvetica {txtSize} bold', fill="white")
 
 #drawing the preferred time box
@@ -518,7 +616,8 @@ def drawPreferredTime(app,canvas):
         canvas.create_text(672*w/800,7*h/120,text=app.prefMin, anchor='nw',
                             font=f'Helvetica {w//50}')
         #if times that don't exist are put in, an error message will pop up   
-        
+
+#draws the error message
 def drawError(app,canvas):
     w=app.width
     h=app.height
@@ -537,8 +636,12 @@ def drawCalendar(app,canvas):
         create_good_rectangle(canvas,w/4,h/4,29*w/30,19*h/20,20,color="#ECF8FF")
         week=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
         for i in range(7):
+            date=datetime.strptime(app.currSunday, '%m/%d/%Y')+timedelta(days=i)
             canvas.create_text(123*w/320+ 43*w/480*i, 33*h/120,text=week[i],
-                                font=f'Helvetica {w//70} bold')
+                                anchor='s',font=f'Helvetica {w//80} ')
+            canvas.create_text(123*w/320+ 43*w/480*i, 33*h/120,
+                                text=date.strftime('%d'),
+                                anchor='n',font=f'Helvetica {w//80} bold')
             canvas.create_line(163*w/480+ 43*w/480*i, h/4,163*w/480+ 43*w/480*i,
                                 19*h/20,width=2, fill='white')
         times=[ i for i in range(25) ]
@@ -547,7 +650,7 @@ def drawCalendar(app,canvas):
             canvas.create_line(w/4,37*h/120+(7*i*h/120), 29*w/30,
                                 37*h/120+(7*i*h/120),width=2, fill='white')
             canvas.create_text(282*w/960,37*h/120+(7*i*h/120),text=f'{currTimes[i]}:00',
-                                font=f'Helvetica {w//70} bold') 
+                                font=f'Helvetica {w//70}') 
         currentWeekView(app, canvas,app.week,app.weekColor,app.weekTimeSpan)
 
 #draw the current week you are looking at
@@ -594,18 +697,18 @@ def drawAddEvent(app,canvas):
     canvas.create_text(292*w/480, 17*h/80, text='ADD EVENT',
                         font=f'Helvetica {w//70} bold', fill="white")
     #draw the arrow buttons
-    #left
+    #left arrow to go back a week
     canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
                             outline='White',width=3, fill='#93B0FC')
-    #right
+    #right arrow to go to the next week
     canvas.create_polygon(38*w/40,17*h/80,37*w/40,31*h/160,37*w/40,37*h/160, 
                             outline='White',width=3, fill='#93B0FC')
     #up
-    #canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
-     #                       outline='White',width=3, fill='#93B0FC')
+    canvas.create_polygon(71*w/80,37*h/160,73*w/80,37*h/160,36*w/40,31*h/160, 
+                           outline='White',width=3, fill='#93B0FC')
     #down
-    #canvas.create_polygon(11*w/40,17*h/80,12*w/40,31*h/160,12*w/40,37*h/160, 
-     #                       outline='White',width=3, fill='#93B0FC')
+    canvas.create_polygon(5*w/16,31*h/160,27*w/80,31*h/160,13*w/40,37*h/160, 
+                           outline='White',width=3, fill='#93B0FC')
     if app.addEvent:
         #call on all the canvas drawing of the page
         addEventPage(app,canvas)

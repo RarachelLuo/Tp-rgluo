@@ -5,7 +5,6 @@ import bible #this is just another python file I made to compile some of the
 #bible verses textfiles
 
 
-
 def appStarted(app):
     app.new=False
     app.currDay=0
@@ -87,14 +86,19 @@ def drawTitle(app,canvas):
 
 #draws main page of verses and questions
 def drawDevotional(app, canvas):
+    i=0
     w=app.width
     h=app.height
-    create_good_rectangle(canvas,7*w/24,7*h/40, 29*w/30, 8*h/20, 20,
+    rowlength=100
+    length=(len(app.verses)//rowlength)+1
+    create_good_rectangle(canvas,7*w/24,7*h/40, 29*w/30, 4*h/20+length*h/30, 20,
                             color="#CEE8FF" )
-    canvas.create_text(7*w/24,5*h/20, text=app.verses, anchor="w",
-                        font=f'Helvetica {w//100} bold', fill="white")
-    create_good_rectangle(canvas,7*w/24,9*h/20,29*w/30,19*h/20,20,
-                        color="#ECF8FF")
+    for i in range(length):
+        canvas.create_text(15*w/48,4*h/20+i*h/30, 
+                        text=app.verses[0+i*rowlength:rowlength+i*rowlength], 
+                        anchor="w", font=f'Helvetica {w//80} bold', fill="black")
+    #create_good_rectangle(canvas,7*w/24,15*h/20,29*w/30,19*h/20,20,
+     #                 color="#ECF8FF")
 
 
 #draws selected tab
